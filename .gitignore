@@ -1,1 +1,11 @@
+# Instructor answer keys — not distributed to students
 solved/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Helm vendored deps
+charts/
+Chart.lock

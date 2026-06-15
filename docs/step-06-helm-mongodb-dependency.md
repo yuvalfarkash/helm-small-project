@@ -56,7 +56,8 @@ config:
 
 secret:
   # The Bitnami chart creates a service named "<release>-mongodb".
-  # The DB name comes from mongodb.auth.databases below.
+  # We connect as the root user (authSource=admin). The "movies" database is
+  # created automatically by MongoDB on the first write.
   mongoUri: "mongodb://root:secretpass@{{ .Release.Name }}-mongodb:27017/movies?authSource=admin"
 
 extraEnv:
@@ -67,15 +68,15 @@ mongodb:
   enabled: true
   auth:
     rootPassword: "secretpass"
-    databases:
-      - movies          # created on first boot
   architecture: standalone
   persistence:
     enabled: true
     size: 1Gi
 ```
 
-> The `mongoUri` uses Bitnami's default `root` user with `authSource=admin`. Keep the password consistent with `mongodb.auth.rootPassword`. In production, source the password from an existing Secret instead of hardcoding it.
+> The `mongoUri` uses Bitnami's `root` user with `authSource=admin`. Keep the password consistent with `mongodb.auth.rootPassword`. In production, source the password from an existing Secret instead of hardcoding it.
+>
+> **Do not** add `auth.databases` (or `auth.usernames`) on their own. The Bitnami chart requires `auth.usernames` **and** `auth.databases` to be set *together and with equal length*; setting only one fails `helm lint`/`install` with a values-validation error. We keep it simple here by using only the root credentials — the app creates the `movies` database on first write.
 
 The remaining templates (`configmap.yaml`, `secret.yaml`, `deployment.yaml`, `service.yaml`, `NOTES.txt`) are **unchanged from Step 05**. Optionally update `NOTES.txt` to mention the subchart:
 
@@ -107,6 +108,11 @@ helm template demo ./movie-chart      # confirm both the API and mongodb render
 helm install demo ./movie-chart
 kubectl get pods
 ```
+
+> **Troubleshooting — `helm repo update` / `helm dependency update` times out.**
+> The Bitnami index (`https://charts.bitnami.com/bitnami`) is very large and is sometimes slow or rate-limited, so you may see `context deadline exceeded`. If that happens:
+> - retry `helm repo update bitnami` (often succeeds on the second try), or
+> - pin an exact chart version in `Chart.yaml` (e.g. `version: 15.6.26`) and run `helm dependency build` instead of `update` — `build` fetches just that one chart using `Chart.lock` and skips the full index refresh.
 
 ## 5. Verify
 
