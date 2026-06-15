@@ -133,24 +133,24 @@ Functions you'll call (all built into Helm):
 
 ---
 
-> **Steps E–K — don't write these from scratch.** You already wrote these exact manifests in Step 04. The job here is to **copy each file in and *templatize* it** — replace the hard-coded names, labels, and values with `{{ ... }}` expressions.
+> **Steps E–K — don't write these from scratch.** You already wrote these exact manifests in your `k8s/` folder back in Steps 03–04. The job here is to **copy each file in and *templatize* it** — replace the hard-coded names, labels, and values with `{{ ... }}` expressions.
 >
 > For each step below:
-> 1. **Copy** the matching file from `solved/step-04/k8s/` (or your own Step 04 manifests) into `movie-chart/templates/`.
+> 1. **Copy** the matching file from your `k8s/` folder into `movie-chart/templates/`.
 > 2. **Adapt** it by making the changes listed — swap hard-coded values for the helpers and `.Values.*` references.
 >
 > | This template | Copy from |
 > | --- | --- |
-> | `configmap.yaml` | `solved/step-04/k8s/configmap.yaml` |
-> | `secret.yaml` | `solved/step-04/k8s/secret.yaml` |
-> | `deployment.yaml` | `solved/step-04/k8s/deployment.yaml` |
-> | `service.yaml` | `solved/step-04/k8s/service.yaml` |
-> | `mongo-service.yaml` | `solved/step-04/k8s/mongo-service.yaml` |
-> | `mongo-statefulset.yaml` | `solved/step-04/k8s/mongo-statefulset.yaml` |
+> | `configmap.yaml` | `k8s/configmap.yaml` |
+> | `secret.yaml` | `k8s/secret.yaml` |
+> | `deployment.yaml` | `k8s/deployment.yaml` |
+> | `service.yaml` | `k8s/service.yaml` |
+> | `mongo-service.yaml` | `k8s/mongo-service.yaml` |
+> | `mongo-statefulset.yaml` | `k8s/mongo-statefulset.yaml` |
 
 ## E. `templates/configmap.yaml`
 
-**Copy** `solved/step-04/k8s/configmap.yaml`, then **adapt** it to turn every key under `.Values.config` into a ConfigMap entry:
+**Copy** your `k8s/configmap.yaml`, then **adapt** it to turn every key under `.Values.config` into a ConfigMap entry:
 
 - Replace the hard-coded name with `{{ include "movie-chart.fullname" . }}-config`.
 - Replace the `labels:` block with `{{- include "movie-chart.labels" . | nindent 4 }}`.
@@ -160,7 +160,7 @@ Functions you'll call (all built into Helm):
 
 ## F. `templates/secret.yaml`
 
-**Copy** `solved/step-04/k8s/secret.yaml`, then **adapt** the `Opaque` Secret so it's named `...-secret` and holds `MONGO_URI` under `stringData`:
+**Copy** your `k8s/secret.yaml`, then **adapt** the `Opaque` Secret so it's named `...-secret` and holds `MONGO_URI` under `stringData`:
 
 - Name → `{{ include "movie-chart.fullname" . }}-secret`; labels → `{{- include "movie-chart.labels" . | nindent 4 }}`.
 - The catch (from step B): `secret.mongoUri` *itself* contains `{{ .Release.Name }}`. A plain `{{ .Values.secret.mongoUri }}` would emit that template text verbatim. Pass it through **`tpl`** to render the inner template against the current context — i.e. `tpl .Values.secret.mongoUri .`, then `| quote`.
@@ -169,7 +169,7 @@ Functions you'll call (all built into Helm):
 
 ## G. `templates/deployment.yaml`
 
-**Copy** `solved/step-04/k8s/deployment.yaml`, then **adapt** it to templated form:
+**Copy** your `k8s/deployment.yaml`, then **adapt** it to templated form:
 
 - **Name:** `{{ include "movie-chart.fullname" . }}` — **replicas:** `{{ .Values.replicaCount }}`.
 - **Labels/selectors:** `metadata.labels` uses `movie-chart.labels`; both `selector.matchLabels` and the pod-template `metadata.labels` use `movie-chart.selectorLabels`. Mind the indentation: `nindent 4` for the metadata labels, `nindent 6` under `matchLabels`, `nindent 8` under the pod template.
@@ -182,7 +182,7 @@ Functions you'll call (all built into Helm):
 
 ## H. `templates/service.yaml`
 
-**Copy** `solved/step-04/k8s/service.yaml`, then **adapt** the app Service:
+**Copy** your `k8s/service.yaml`, then **adapt** the app Service:
 
 - Name `{{ include "movie-chart.fullname" . }}`, common labels via `movie-chart.labels`.
 - `type: {{ .Values.service.type }}`.
@@ -193,7 +193,7 @@ Functions you'll call (all built into Helm):
 
 ## I. `templates/mongo-service.yaml` (conditional)
 
-**Copy** `solved/step-04/k8s/mongo-service.yaml` (the headless Mongo Service), then **adapt** it — the new twist is that it must only render when in-cluster Mongo is enabled:
+**Copy** your `k8s/mongo-service.yaml` (the headless Mongo Service), then **adapt** it — the new twist is that it must only render when in-cluster Mongo is enabled:
 
 - Wrap the **entire file** in `{{- if .Values.mongo.enabled }}` … `{{- end }}`.
 - Name it `{{ include "movie-chart.mongoName" . }}`; make it headless (`clusterIP: None`).
@@ -204,7 +204,7 @@ Functions you'll call (all built into Helm):
 
 ## J. `templates/mongo-statefulset.yaml` (conditional)
 
-**Copy** `solved/step-04/k8s/mongo-statefulset.yaml`, then **adapt** it — templated and wrapped in the **same** `{{- if .Values.mongo.enabled }}` guard as step I:
+**Copy** your `k8s/mongo-statefulset.yaml`, then **adapt** it — templated and wrapped in the **same** `{{- if .Values.mongo.enabled }}` guard as step I:
 
 - Name and `serviceName` both = `{{ include "movie-chart.mongoName" . }}`; `replicas: 1`.
 - Same `component: mongo` label on metadata, selector, and pod template as in step I (same indentation rules as the Deployment).
